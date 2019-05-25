@@ -19,9 +19,11 @@ unzip train_data.json.zip
 unzip dev_data.json.zip
 cd -
 ```
-### Step 3: 获取词汇表文件
-从训练和开发数据的字段“postag”中获取高频词，然后将这些高频词组成词汇表。
+### Step 3: 获取字典文件词典文件
+从训练和开发数据的字段“text”中获取高频字，然后将这些高频词组成字典。
+从训练和开发数据的字段“postag”中获取高频词，然后将这些高频词组成词典。
 ```
+python lib/get_char.py ./data/train_data.json ./data/dev_data.json > ./dict/char_idx
 python lib/get_vocab.py ./data/train_data.json ./data/dev_data.json > ./dict/word_idx
 ```
 ### Step 4: 训练p分类模型

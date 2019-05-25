@@ -110,6 +110,7 @@ def main(conf_dict, model_path, predict_data_path,
     """Predict main function"""
     if use_cuda and not fluid.core.is_compiled_with_cuda():
         return
+    print conf_dict
     data_generator = p_data_reader.RcDataReader(
         wordemb_dict_path=conf_dict['word_idx_path'],
         postag_dict_path=conf_dict['postag_dict_path'],

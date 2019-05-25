@@ -66,7 +66,7 @@ def get_vocab(train_file, dev_file):
     print '<UNK>'
     vocab_set = set()
     value_list = sorted(word_dic.iteritems(), key=lambda d:d[1], reverse=True)
-    for word in value_list[:30000]:
+    for word in value_list:
         print word[0]
         vocab_set.add(word[0])
 
