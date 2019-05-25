@@ -42,6 +42,7 @@ def train(conf_dict, data_reader, use_cuda=False):
     """
     label_dict_len = data_reader.get_dict_size('label_dict')
     # input layer
+    char = fluid.layers.data(name='char_data', shape=[1], dtype='int64', lod_level=1)
     word = fluid.layers.data(
         name='word_data', shape=[1], dtype='int64', lod_level=1)
     postag = fluid.layers.data(
@@ -50,7 +51,7 @@ def train(conf_dict, data_reader, use_cuda=False):
     target = fluid.layers.data(
         name='target', shape=[label_dict_len], dtype='float32', lod_level=0)
     # NN: embedding + lstm + pooling
-    feature_out = p_model.db_lstm(data_reader, word, postag, conf_dict)
+    feature_out = p_model.db_lstm(data_reader, char, word, postag, conf_dict)
     # loss function for multi-label classification
     class_cost = fluid.layers.sigmoid_cross_entropy_with_logits(x=feature_out, \
         label=target)
@@ -66,7 +67,7 @@ def train(conf_dict, data_reader, use_cuda=False):
         batch_size=conf_dict['batch_size'])
 
     place = fluid.CUDAPlace(0) if use_cuda else fluid.CPUPlace()
-    feeder = fluid.DataFeeder(feed_list=[word, postag, target], place=place)
+    feeder = fluid.DataFeeder(feed_list=[char, word, postag, target], place=place)
     exe = fluid.Executor(place)
 
     save_dirname = conf_dict['p_model_save_dir']
@@ -106,13 +107,13 @@ def train(conf_dict, data_reader, use_cuda=False):
                 pass_id, time.time() - pass_start_time, pass_avg_cost)
             save_path = os.path.join(save_dirname, 'pass_%04d-%f' %
                                     (pass_id, pass_avg_cost))
-            fluid.io.save_inference_model(save_path, ['word_data', 'token_pos'],
+            fluid.io.save_inference_model(save_path, ['char_data', 'word_data', 'token_pos'],
                                           [feature_out], exe, params_filename='params')
 
         else:
             # pass times complete and the training is over
             save_path = os.path.join(save_dirname, 'final')
-            fluid.io.save_inference_model(save_path, ['word_data', 'token_pos'],
+            fluid.io.save_inference_model(save_path, ['char_data', 'word_data', 'token_pos'],
                                           [feature_out], exe, params_filename='params')
         return
 
@@ -125,6 +126,7 @@ def main(conf_dict, use_cuda=False):
         print >> sys.stderr, 'No GPU'
         return
     data_generator = p_data_reader.RcDataReader(
+        charemb_dict_path=conf_dict['char_idx_path'],
         wordemb_dict_path=conf_dict['word_idx_path'],
         postag_dict_path=conf_dict['postag_dict_path'],
         label_dict_path=conf_dict['label_dict_path'],
@@ -142,5 +144,6 @@ if __name__ == '__main__':
         required=True)
     args = parser.parse_args()
     conf_dict = conf_lib.load_conf(args.conf_path)
+    print conf_dict
     use_gpu = True if conf_dict.get('use_gpu', 'False') == 'True' else False
     main(conf_dict, use_cuda=use_gpu)

@@ -29,11 +29,13 @@ class RcDataReader(object):
     class for p classfication data reader
     """
     def __init__(self,
+                charemb_dict_path,
                 wordemb_dict_path,
                 postag_dict_path,
                 label_dict_path,
                 train_data_list_path='',
                 test_data_list_path=''):
+        self._charemb_dict_path = charemb_dict_path
         self._wordemb_dict_path = wordemb_dict_path
         self._postag_dict_path = postag_dict_path
         self._label_dict_path = label_dict_path
@@ -41,11 +43,12 @@ class RcDataReader(object):
         self.test_data_list_path = test_data_list_path
         self._p_map_eng_dict = {}
         # load dictionary
-        self._dict_path_dict = {'wordemb_dict': self._wordemb_dict_path,
+        self._dict_path_dict = {'charemb_dict': self._charemb_dict_path,
+                                'wordemb_dict': self._wordemb_dict_path,
                                 'postag_dict': self._postag_dict_path,
                                 'label_dict': self._label_dict_path}
         # check if the file exists
-        for input_dict in [wordemb_dict_path, postag_dict_path, \
+        for input_dict in [charemb_dict_path, wordemb_dict_path, postag_dict_path, \
                 label_dict_path, train_data_list_path, test_data_list_path]:
             if not os.path.exists(input_dict):
                 raise ValueError("%s not found." % (input_dict))
@@ -56,6 +59,8 @@ class RcDataReader(object):
                 self._load_dict_from_file(self._dict_path_dict['postag_dict'])
         self._feature_dict['wordemb_dict'] = \
                 self._load_dict_from_file(self._dict_path_dict['wordemb_dict'])
+        self._feature_dict['charemb_dict'] = \
+            self._load_dict_from_file(self._dict_path_dict['charemb_dict'])
         self._feature_dict['label_dict'] = \
                 self._load_label_dict(self._dict_path_dict['label_dict'])
         self._reverse_dict = {name: self._get_reverse_dict(name) for name in
@@ -118,6 +123,7 @@ class RcDataReader(object):
         sentence = dic['text']
         sentence_term_list = [item['word'] for item in dic['postag']]
         sentence_pos_list = [item['pos'] for item in dic['postag']]
+        sentence_charemb_slot = [self._feature_dict['charemb_dict'].get(c, self._UNK_IDX) for c in sentence]
         sentence_emb_slot = [self._feature_dict['wordemb_dict'].get(w, self._UNK_IDX) \
                 for w in sentence_term_list]
         sentence_pos_slot = [self._feature_dict['postag_dict'].get(pos, self._UNK_IDX) \
@@ -130,7 +136,7 @@ class RcDataReader(object):
         if len(sentence_emb_slot) == 0 or len(sentence_pos_slot) == 0 \
                 or len(label_slot) == 0:
             return None
-        feature_slot = [sentence_emb_slot, sentence_pos_slot]
+        feature_slot = [sentence_charemb_slot, sentence_emb_slot, sentence_pos_slot]
         input_fields = json.dumps(dic, ensure_ascii=False)
         output_slot = feature_slot
         if need_input:
@@ -215,17 +221,19 @@ class RcDataReader(object):
 if __name__ == '__main__':
     # initialize data generator
     data_generator = RcDataReader(
-        wordemb_dict_path='./dict/word_idx',
-        postag_dict_path='./dict/postag_dict',
-        label_dict_path='./dict/p_eng',
-        train_data_list_path='./data/train_data.json',
-        test_data_list_path='./data/dev_data.json')
+        charemb_dict_path='../../dict/char_idx',
+        wordemb_dict_path='../../dict/word_idx',
+        postag_dict_path='../../dict/postag_dict',
+        label_dict_path='../../dict/p_eng',
+        train_data_list_path='../../data/train_data.json',
+        test_data_list_path='../../data/dev_data.json')
 
     # prepare data reader
     ttt = data_generator.get_test_reader()
     for index, features in enumerate(ttt()):
-        input_sent, word_idx_list, postag_list, label_list = features
+        input_sent, char_idx_list, word_idx_list, postag_list, label_list = features
         print input_sent.encode('utf-8')
+        print '0 features:', len(char_idx_list), char_idx_list
         print '1st features:', len(word_idx_list), word_idx_list
         print '2nd features:', len(postag_list), postag_list
         print '3rd features:', len(label_list), '\t', label_list

@@ -28,7 +28,7 @@ import paddle
 import paddle.fluid as fluid
 
 
-def db_lstm(data_reader, word, postag, conf_dict):
+def db_lstm(data_reader,char, word, postag, conf_dict):
     """
     Neural network structure definition: stacked bidirectional
     LSTM and max-pooling
@@ -39,11 +39,20 @@ def db_lstm(data_reader, word, postag, conf_dict):
     word_emb_fixed = True if conf_dict['word_emb_fixed'] == "True" else False
     emb_distributed = not conf_dict['is_local']
     # 2 features
-    word_param = fluid.ParamAttr(name=conf_dict['emb_name'],
-                                 trainable=(not word_emb_fixed))
+    char_param = fluid.ParamAttr(name='char_emb', trainable=(not word_emb_fixed))
+    word_param = fluid.ParamAttr(name=conf_dict['emb_name'], trainable=(not word_emb_fixed))
     pos_param = fluid.ParamAttr(name='pos_emb', trainable=(not word_emb_fixed))
 
     conf_dict['is_sparse'] = bool(conf_dict['is_sparse'])
+    char_embedding = fluid.layers.embedding(
+        input=char,
+        size=[data_reader.get_dict_size('charemb_dict'),
+            conf_dict['word_dim']],
+        dtype='float32',
+        is_distributed=emb_distributed,
+        is_sparse=conf_dict['is_sparse'],
+        param_attr=char_param)
+
     word_embedding = fluid.layers.embedding(
         input=word,
         size=[data_reader.get_dict_size('wordemb_dict'),
@@ -63,7 +72,7 @@ def db_lstm(data_reader, word, postag, conf_dict):
         param_attr=pos_param)
 
     # embedding
-    emb_layers = [word_embedding, postag_embedding]
+    emb_layers = [char_embedding, word_embedding, postag_embedding]
 
     # input hidden
     hidden_0_layers = [

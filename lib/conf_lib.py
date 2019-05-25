@@ -54,7 +54,7 @@ def load_conf(conf_filename):
                 'spo_model_dir': ['spo_test_data_path', 'spo_train_data_path', 
                     'spo_model_save_dir'],
                 'dict_path': ["so_label_dict_path", "label_dict_path",
-                    "postag_dict_path", "word_idx_path"]
+                    "postag_dict_path", "word_idx_path", "char_idx_path"]
                 }
 
     for session_key in str_conf_keys:
